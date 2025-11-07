@@ -23,44 +23,36 @@
         --code-bg: #252525;
       }
     }
+    * { box-sizing: border-box; }
     body {
       font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
       background: var(--bg);
       color: var(--text);
       margin: 0;
-      padding: 20px;
+      padding: 16px;
       line-height: 1.6;
     }
-    .container {
-      max-width: 1000px;
-      margin: 0 auto;
-    }
-    header {
-      text-align: center;
-      margin-bottom: 30px;
-    }
-    h1 {
-      margin: 0;
-      font-size: 2rem;
-      color: var(--primary);
-    }
-    .subtitle {
-      color: #666;
-      font-size: 1rem;
-    }
-    .grid {
+    .container { max-width: 1200px; margin: 0 auto; }
+
+    header { text-align: center; margin-bottom: 24px; }
+    h1 { margin: 0; font-size: 1.8rem; color: var(--primary); }
+    .subtitle { color: #666; font-size: 0.95rem; margin-top: 4px; }
+
+    .section {
       display: grid;
-      grid-template-columns: 1fr 1fr;
+      grid-template-columns: 1fr;
       gap: 20px;
+      margin-bottom: 24px;
     }
-    @media (max-width: 768px) {
-      .grid { grid-template-columns: 1fr; }
+    @media (min-width: 768px) {
+      .section { grid-template-columns: 1fr 1fr; }
     }
+
     .card {
       background: var(--card);
       border: 1px solid var(--border);
       border-radius: 12px;
-      padding: 20px;
+      padding: 16px;
       box-shadow: 0 2px 8px rgba(0,0,0,0.05);
     }
     label {
@@ -69,7 +61,7 @@
       font-weight: 600;
       font-size: 0.95rem;
     }
-    textarea {
+    textarea, .output {
       width: 100%;
       min-height: 180px;
       padding: 12px;
@@ -83,14 +75,8 @@
     }
     .output {
       white-space: pre;
-      background: var(--code-bg);
-      padding: 12px;
-      border-radius: 8px;
-      border: 1px solid var(--border);
-      min-height: 180px;
-      font-family: 'Courier New', monospace;
-      font-size: 0.95rem;
       overflow-x: auto;
+      min-height: 180px;
     }
     .btn {
       margin-top: 10px;
@@ -103,18 +89,15 @@
       font-size: 0.9rem;
       transition: background 0.2s;
     }
-    .btn:hover {
-      background: #0b5ed7;
-    }
+    .btn:hover { background: #0b5ed7; }
     .btn-copy {
       background: var(--success);
       float: right;
     }
-    .btn-copy:hover {
-      background: #218838;
-    }
+    .btn-copy:hover { background: #218838; }
+
     .note {
-      font-size: 0.85rem;
+      font-size: 0.82rem;
       color: #666;
       margin-top: 8px;
       font-style: italic;
@@ -125,10 +108,7 @@
       color: #888;
       font-size: 0.9rem;
     }
-    .loading {
-      color: #666;
-      font-style: italic;
-    }
+    .loading { color: #666; font-style: italic; }
   </style>
 </head>
 <body>
@@ -138,15 +118,14 @@
       <p class="subtitle">RFC 6376 §3.4.2 — Header & Body Canonicalization</p>
     </header>
 
-    <div class="grid">
-      <!-- Input: Header -->
+    <!-- Header Section -->
+    <div class="section">
       <div class="card">
         <label for="header-input">Email Header (with folding)</label>
         <textarea id="header-input" placeholder="Subject:  Hello  \r\n\tWorld\r\nFrom: user@example.com">Subject:  Hello  \r\n\tWorld\r\nFrom: user@example.com</textarea>
         <div class="note">Supports \r\n folding and tabs</div>
       </div>
 
-      <!-- Output: Canonicalized Header -->
       <div class="card">
         <label>Canonicalized Header</label>
         <div id="header-output" class="output loading">Processing...</div>
@@ -154,15 +133,14 @@
       </div>
     </div>
 
-    <div class="grid" style="margin-top: 20px;">
-      <!-- Input: Body -->
+    <!-- Body Section -->
+    <div class="section">
       <div class="card">
         <label for="body-input">Email Body</label>
         <textarea id="body-input" placeholder="Hello  \r\n  World   \r\n\r\n">Hello  \r\n  World   \r\n\r\n</textarea>
         <div class="note">Trailing empty lines are removed</div>
       </div>
 
-      <!-- Output: Canonicalized Body -->
       <div class="card">
         <label>Canonicalized Body</label>
         <div id="body-output" class="output loading">Processing...</div>
@@ -214,7 +192,7 @@
       });
     }
 
-    // Auto-update with debounce
+    // Responsive input listeners
     document.getElementById('header-input').addEventListener('input', debounce(updateCanonicalization, 300));
     document.getElementById('body-input').addEventListener('input', debounce(updateCanonicalization, 300));
 
