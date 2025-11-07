@@ -6,6 +6,9 @@ app = Flask(__name__)
 
 def relaxed_header_canonicalize(raw_header):
     """DKIM Relaxed Header Canonicalization (RFC 6376 §3.4.2)"""
+    # Step 1: Unfold continuation lines (replace CRLF + WSP with a single space)
+    raw_header = re.sub(r'\r\n[ \t]+', ' ', raw_header)
+
     past_field_name = False
     seen_wsp = False
     eat_wsp = False
@@ -32,13 +35,17 @@ def relaxed_header_canonicalize(raw_header):
         relaxed.append(' ')
 
     result = ''.join(relaxed).strip()
+
+    # Step 2: Ensure no spaces before colon and exactly one after
     colon_pos = result.find(':')
     if colon_pos != -1:
         name = result[:colon_pos].rstrip()
         value = result[colon_pos + 1:].lstrip()
         result = name + ':' + value
 
+    # Step 3: End with CRLF
     return result + '\r\n'
+
 
 def relaxed_body_canonicalize(raw_body):
     """DKIM Relaxed Body Canonicalization (RFC 6376 §3.4.2)"""
@@ -56,11 +63,17 @@ def relaxed_body_canonicalize(raw_body):
     while canon_lines and not canon_lines[-1]:
         canon_lines.pop()
 
+    # If body is empty, canonical form is a single CRLF
+    if not canon_lines:
+        return '\r\n'
+
     return '\r\n'.join(canon_lines) + '\r\n'
+
 
 @app.route('/')
 def index():
     return render_template('index.html')
+
 
 @app.route('/canonicalize', methods=['POST'])
 def canonicalize():
@@ -72,6 +85,7 @@ def canonicalize():
         'header': relaxed_header_canonicalize(header),
         'body': relaxed_body_canonicalize(body)
     })
+
 
 if __name__ == '__main__':
     app.run(debug=True)
