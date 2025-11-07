@@ -14,6 +14,7 @@
       --code-bg: #f1f3f5;
       --success: #28a745;
     }
+
     @media (prefers-color-scheme: dark) {
       :root {
         --bg: #121212;
@@ -23,63 +24,97 @@
         --code-bg: #252525;
       }
     }
+
     * { box-sizing: border-box; }
+
     body {
       font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
       background: var(--bg);
       color: var(--text);
       margin: 0;
-      padding: 12px; /* Reduced for mobile */
+      padding: 12px;
       line-height: 1.6;
     }
-    .container { max-width: 1200px; margin: 0 auto; }
 
-    header { text-align: center; margin-bottom: 20px; }
-    h1 { margin: 0; font-size: clamp(1.5rem, 5vw, 1.8rem); } /* Scales for mobile */
-    .subtitle { color: #666; font-size: clamp(0.85rem, 3vw, 0.95rem); margin-top: 4px; }
+    .container {
+      max-width: 1200px;
+      margin: 0 auto;
+    }
+
+    header {
+      text-align: center;
+      margin-bottom: 20px;
+    }
+
+    h1 {
+      margin: 0;
+      font-size: clamp(1.5rem, 5vw, 1.8rem);
+    }
+
+    .subtitle {
+      color: #666;
+      font-size: clamp(0.85rem, 3vw, 0.95rem);
+      margin-top: 4px;
+    }
 
     .section {
       display: grid;
       grid-template-columns: 1fr;
-      gap: 16px; /* Smaller gap for mobile */
+      gap: 16px;
       margin-bottom: 20px;
     }
+
     @media (min-width: 768px) {
-      .section { grid-template-columns: 1fr 1fr; gap: 20px; }
+      .section {
+        grid-template-columns: 1fr 1fr;
+        gap: 20px;
+      }
     }
 
     .card {
       background: var(--card);
       border: 1px solid var(--border);
       border-radius: 12px;
-      padding: 12px; /* Reduced for mobile */
+      padding: 12px;
       box-shadow: 0 2px 8px rgba(0,0,0,0.05);
+      position: relative;
     }
+
     label {
       display: block;
       margin-bottom: 6px;
       font-weight: 600;
       font-size: clamp(0.85rem, 3vw, 0.95rem);
     }
-    textarea, .output {
+
+    textarea,
+    .output {
       width: 100%;
-      min-height: 120px; /* Smaller for mobile */
+      min-height: 120px;
       padding: 10px;
       border: 1px solid var(--border);
       border-radius: 8px;
       background: var(--code-bg);
       color: var(--text);
       font-family: 'Courier New', monospace;
-      font-size: clamp(0.8rem, 2.5vw, 0.9rem); /* Scales font */
+      font-size: clamp(0.8rem, 2.5vw, 0.9rem);
       resize: vertical;
       box-sizing: border-box;
     }
+
+    textarea#header-input {
+      white-space: pre;
+      overflow-x: auto;
+      wrap: off;
+    }
+
     .output {
-      white-space: pre-wrap; /* Wraps long lines, no scroll */
-      word-break: break-all; /* Break long words */
-      overflow-x: hidden; /* No horizontal scrollbar */
+      white-space: pre-wrap;
+      word-break: break-word;
+      overflow-x: auto;
       min-height: 120px;
     }
+
     .btn {
       margin-top: 8px;
       padding: 8px 14px;
@@ -91,14 +126,23 @@
       font-size: clamp(0.8rem, 2.5vw, 0.9rem);
       transition: background 0.2s;
       width: auto;
-      min-width: 80px; /* Prevents tiny buttons */
+      min-width: 80px;
     }
-    .btn:hover { background: #0b5ed7; }
+
+    .btn:hover {
+      background: #0b5ed7;
+    }
+
     .btn-copy {
       background: var(--success);
-      float: right;
+      position: absolute;
+      top: 12px;
+      right: 12px;
     }
-    .btn-copy:hover { background: #218838; }
+
+    .btn-copy:hover {
+      background: #218838;
+    }
 
     .note {
       font-size: clamp(0.75rem, 2.5vw, 0.82rem);
@@ -106,13 +150,18 @@
       margin-top: 6px;
       font-style: italic;
     }
+
     footer {
       text-align: center;
       margin-top: 32px;
       color: #888;
       font-size: clamp(0.8rem, 2.5vw, 0.9rem);
     }
-    .loading { color: #666; font-style: italic; }
+
+    .loading {
+      color: #666;
+      font-style: italic;
+    }
   </style>
 </head>
 <body>
@@ -132,8 +181,8 @@
 
       <div class="card">
         <label>Canonicalized Header</label>
-        <div id="header-output" class="output loading">Processing...</div>
         <button class="btn btn-copy" onclick="copyOutput('header-output')">Copy</button>
+        <div id="header-output" class="output loading">Processing...</div>
       </div>
     </div>
 
@@ -147,8 +196,8 @@
 
       <div class="card">
         <label>Canonicalized Body</label>
-        <div id="body-output" class="output loading">Processing...</div>
         <button class="btn btn-copy" onclick="copyOutput('body-output')">Copy</button>
+        <div id="body-output" class="output loading">Processing...</div>
       </div>
     </div>
 
@@ -167,9 +216,16 @@
       };
     }
 
+    function escapeCRLF(str) {
+      return str.replace(/\r\n/g, '\\r\\n').replace(/\n/g, '\\n').replace(/\r/g, '\\r');
+    }
+
     async function updateCanonicalization() {
-      const header = document.getElementById('header-input').value;
-      const body = document.getElementById('body-input').value;
+      const rawHeader = document.getElementById('header-input').value;
+      const rawBody = document.getElementById('body-input').value;
+
+      const header = escapeCRLF(rawHeader);
+      const body = escapeCRLF(rawBody);
 
       try {
         const res = await fetch('/canonicalize', {
@@ -178,17 +234,20 @@
           body: JSON.stringify({ header, body })
         });
         const data = await res.json();
-        document.getElementById('header-output').textContent = data.header;
-        document.getElementById('body-output').textContent = data.body;
+
+        document.getElementById('header-output').textContent = escapeCRLF(data.header);
+        document.getElementById('body-output').textContent = escapeCRLF(data.body);
       } catch (err) {
-        document.getElementById('header-output').textContent = 'Error';
+        console.error(err);
+        document.getElementById('header-output').textContent = 'Error: Check console';
         document.getElementById('body-output').textContent = 'Error';
       }
     }
 
     function copyOutput(id) {
       const text = document.getElementById(id).textContent;
-      navigator.clipboard.writeText(text).then(() => {
+      const unescaped = text.replace(/\\r\\n/g, '\r\n').replace(/\\n/g, '\n').replace(/\\r/g, '\r');
+      navigator.clipboard.writeText(unescaped).then(() => {
         const btn = event.target;
         const orig = btn.textContent;
         btn.textContent = 'Copied!';
@@ -196,11 +255,9 @@
       });
     }
 
-    // Responsive input listeners
     document.getElementById('header-input').addEventListener('input', debounce(updateCanonicalization, 300));
     document.getElementById('body-input').addEventListener('input', debounce(updateCanonicalization, 300));
 
-    // Initial load
     updateCanonicalization();
   </script>
 </body>

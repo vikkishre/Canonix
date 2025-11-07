@@ -5,46 +5,49 @@ import re
 app = Flask(__name__)
 
 def relaxed_header_canonicalize(raw_header):
-    """DKIM Relaxed Header Canonicalization (RFC 6376 §3.4.2)"""
-    # Step 1: Unfold continuation lines (replace CRLF + WSP with a single space)
-    raw_header = re.sub(r'\r\n[ \t]+', ' ', raw_header)
+    """
+    Robust DKIM relaxed header canonicalization.
+    - Accepts raw strings that may contain literal "\\r\\n" sequences.
+    - Normalizes newlines to CRLF, unfolds continuations, lowercases names,
+      collapses WSP in values, and returns headers joined with CRLF ending.
+    """
+    if raw_header is None:
+        return '\r\n'
 
-    past_field_name = False
-    seen_wsp = False
-    eat_wsp = False
-    relaxed = []
+    # 0) If input contains literal backslash-r backslash-n sequences (common when
+    # passing headers as a single-line JSON string), turn those into actual CRLF.
+    raw_header = raw_header.replace('\\r\\n', '\r\n').replace('\\n', '\r\n')
 
-    for c in raw_header:
-        if c in '\r\n':
+    # 1) Normalize any lone LF or CR to CRLF so we have a consistent newline form
+    raw_header = raw_header.replace('\r\n', '\n').replace('\r', '\n')  # unify to '\n'
+    raw_header = raw_header.replace('\n', '\r\n')                    # convert to CRLF
+
+    # 2) Unfold continuation lines: replace CRLF followed by WSP with single SP
+    unfolded = re.sub(r'(\\t|\\r\\n[ \t]+|\r\n[ \t]+)', ' ', raw_header)
+
+    # 3) Split into lines (now no folding)
+    lines = [line for line in unfolded.split('\r\n') if line != '']
+
+    canon_fields = []
+    for line in lines:
+        # find the first colon separating name and value
+        colon_pos = line.find(':')
+        if colon_pos == -1:
+            # skip malformed header lines with no colon
             continue
-        elif c in ' \t':
-            if not eat_wsp:
-                seen_wsp = True
-        else:
-            if seen_wsp:
-                relaxed.append(' ')
-                seen_wsp = False
-            if c == ':' and not past_field_name:
-                past_field_name = True
-                eat_wsp = True
-            else:
-                eat_wsp = False
-            relaxed.append(c.lower() if not past_field_name else c)
 
-    if seen_wsp:
-        relaxed.append(' ')
+        # header-name: lowercase, trim WSP around it
+        name = line[:colon_pos].strip().lower()
 
-    result = ''.join(relaxed).strip()
+        # header-value: collapse WSP and strip
+        value = line[colon_pos + 1:]
+        value = re.sub(r'[ \t]+', ' ', value).strip()
 
-    # Step 2: Ensure no spaces before colon and exactly one after
-    colon_pos = result.find(':')
-    if colon_pos != -1:
-        name = result[:colon_pos].rstrip()
-        value = result[colon_pos + 1:].lstrip()
-        result = name + ':' + value
+        canon_fields.append(f"{name}:{value}")
 
-    # Step 3: End with CRLF
-    return result + '\r\n'
+    # join with CRLF and ensure a single CRLF at end
+    return '\r\n'.join(canon_fields) + '\r\n'
+
 
 
 def relaxed_body_canonicalize(raw_body):
